@@ -47,7 +47,7 @@ export default function CameraCapture() {
     };
   }, []);
 
-  const canCapture = useMemo(() => streamReady && !isSubmitting, [streamReady, isSubmitting]);
+  const canCapture = useMemo(() => streamReady && !isSubmitting && !permissionError, [streamReady, isSubmitting, permissionError]);
 
   const captureFrame = useCallback(() => {
     const video = videoRef.current;
@@ -106,57 +106,57 @@ export default function CameraCapture() {
   }, [captureFrame, symptomNote]);
 
   return (
-    <div className="flex w-full flex-col gap-4 lg:flex-row">
-      <div className="flex w-full max-w-md flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-950">
-          {permissionError ? (
-            <div className="flex h-48 items-center justify-center px-6 text-center text-sm text-red-500">
-              {permissionError}
-            </div>
-          ) : (
-            <video ref={videoRef} playsInline className="h-48 w-full bg-black object-cover" />
-          )}
-        </div>
-        <textarea
-          value={symptomNote}
-          onChange={(event) => setSymptomNote(event.target.value)}
-          placeholder="Describe what the patient is experiencing..."
-          className="h-24 w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300"
-        />
+    <div className="space-y-4 text-slate-100">
+      <div className="space-y-1">
+        <h3 className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-300">Patient camera</h3>
+        <p className="text-xs text-slate-400">Keep the lens steady, then tap capture when guidance would benefit from a visual.</p>
+      </div>
+
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black">
+        {permissionError ? (
+          <div className="flex h-64 items-center justify-center px-6 text-center text-sm text-red-400">
+            {permissionError}
+          </div>
+        ) : (
+          <video ref={videoRef} playsInline className="h-64 w-full object-cover" />
+        )}
+
         <button
           type="button"
           onClick={submitCapture}
           disabled={!canCapture}
-          className="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:bg-slate-400"
+          className="absolute bottom-4 right-4 inline-flex items-center rounded-full bg-emerald-500 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-lg transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-600"
         >
-          {isSubmitting ? "Analyzing..." : "Capture & Analyze"}
+          {isSubmitting ? "Analyzing" : "Capture"}
         </button>
-        {submitError && <p className="text-xs text-red-500">{submitError}</p>}
+
         <canvas ref={canvasRef} className="hidden" />
       </div>
 
-      <div className="flex-1 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-        {!result ? (
-          <div className="flex h-full flex-col justify-center gap-3">
-            <span className="font-mono text-xs uppercase text-slate-500">Awaiting capture</span>
-            <p>Provide a quick description and hit capture. The OpenAI Responses API will combine your note with the photo to prioritize next steps.</p>
-            <p className="text-xs text-slate-500">Need help? Ensure your browser has camera permissions enabled and that you&apos;re serving over HTTPS.</p>
+      <textarea
+        value={symptomNote}
+        onChange={(event) => setSymptomNote(event.target.value)}
+        placeholder="Optional note for the doctor"
+        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300/40"
+      />
+
+      {submitError && <p className="text-xs text-red-400">{submitError}</p>}
+
+      {!result ? (
+        <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-400">Awaiting capture</p>
+          <p className="mt-2 text-sm text-slate-300">Your photo stays local until you send it for review alongside the conversation history.</p>
+        </div>
+      ) : (
+        <div className="space-y-3 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-4 text-sm text-emerald-100">
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-300">Latest capture</p>
+          <div className="overflow-hidden rounded-xl border border-emerald-300/40 bg-emerald-500/10">
+            <img src={result.dataUrl} alt="Captured condition" className="max-h-48 w-full object-cover" />
           </div>
-        ) : (
-          <div className="flex h-full flex-col gap-3">
-            <span className="font-mono text-xs uppercase text-emerald-600">Analysis ready</span>
-            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-              <img src={result.dataUrl} alt="Captured condition" className="max-h-48 w-full object-cover" />
-            </div>
-            <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-900">
-              {result.analysis || "No analysis returned."}
-            </div>
-            {result.responseId && (
-              <span className="text-xs text-slate-400">OpenAI response id: {result.responseId}</span>
-            )}
-          </div>
-        )}
-      </div>
+          <p>{result.analysis || "No analysis returned."}</p>
+          {result.responseId && <p className="text-xs text-emerald-200">Response id: {result.responseId}</p>}
+        </div>
+      )}
     </div>
   );
 }
