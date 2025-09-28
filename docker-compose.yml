@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    image: pygmalion-doctor-backend:dev
+    container_name: backend
+    environment:
+      - OPENAI_API_KEY=sk-proj-1234567890
+      - OPENAI_BASE_URL=https://pygmalion.herdora.com/v1
+      - OPENAI_RESPONSES_MODEL=gpt-5-mini
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    command: ["sh", "-lc", "rm -f uv.lock; uv lock; uv sync; uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+
+  frontend:
+    build:
+      context: ./frontend
+    image: pygmalion-doctor-frontend:dev
+    container_name: frontend
+    environment:
+      - INTERNAL_API_BASE_URL=http://backend:8000
+      - NEXT_PUBLIC_API_BASE_URL=http://backend:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: ["pnpm", "dev"]
+    depends_on:
+      - backend
